@@ -26,6 +26,10 @@
                        class="block px-4 py-2 hover:bg-gray-800 transition">
             Blogs
           </router-link>
+          <router-link to="/admin/users" 
+                       class="block px-4 py-2 hover:bg-gray-800 transition">
+            Users
+          </router-link>
           <div class="border-t border-gray-800 mt-4 pt-4">
             <router-link to="/" 
                          class="block px-4 py-2 hover:bg-gray-800 transition">
