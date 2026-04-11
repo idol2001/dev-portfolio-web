@@ -18,16 +18,19 @@
       <p class="text-gray-300 mb-12 text-center max-w-3xl mx-auto whitespace-pre-line">{{ skills.intro }}</p>
       
       <!-- Skills by Category -->
-      <div class="space-y-12">
+      <div class="space-y-8">
         <div v-for="group in skills.skills" :key="group.title">
-          <h2 class="text-2xl font-semibold mb-6 text-blue-400 text-center">{{ group.title }}</h2>
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          <h2 class="text-xl font-semibold mb-4 text-blue-400 text-center">{{ group.title }}</h2>
+          <div class="flex flex-wrap justify-center gap-x-6 gap-y-4">
             <div v-for="item in group.items" :key="item.title" 
-                 class="bg-gray-800 p-6 rounded-lg text-center hover:bg-gray-750 hover:transform hover:scale-105 transition">
-              <div class="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-2xl font-bold">
+                 class="flex flex-col items-center w-20">
+              <div v-if="item.icon" class="w-12 h-12 mb-2">
+                <img :src="item.icon" :alt="item.title" class="w-full h-full object-contain" />
+              </div>
+              <div v-else class="w-12 h-12 mb-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-lg font-bold">
                 {{ getIcon(item.title) }}
               </div>
-              <h3 class="text-sm font-medium">{{ item.title }}</h3>
+              <h3 class="text-xs text-center leading-tight text-gray-300">{{ item.title }}</h3>
             </div>
           </div>
         </div>

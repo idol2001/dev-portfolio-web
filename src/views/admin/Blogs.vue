@@ -8,7 +8,7 @@
     </div>
 
     <!-- 添加/编辑博客表单 -->
-    <div v-if="showAddBlog || editingBlog" class="bg-white p-6 rounded-lg shadow mb-6">
+    <div v-show="showAddBlog || editingBlog" class="bg-white p-6 rounded-lg shadow mb-6">
       <h3 class="font-medium mb-4">{{ editingBlog ? 'Edit Blog Post' : 'New Blog Post' }}</h3>
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
@@ -37,8 +37,15 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Cover Image URL</label>
-            <input v-model="form.cover_image" type="url" placeholder="https://..." class="w-full px-3 py-2 border rounded-lg" />
+            <label class="block text-sm font-medium mb-1">Cover Image</label>
+            <div class="flex gap-3 items-start">
+              <input v-model="form.cover_image" type="url" placeholder="https://..." class="flex-1 px-3 py-2 border rounded-lg text-sm" />
+              <label class="cursor-pointer bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 whitespace-nowrap">
+                📁 Upload
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="handleCoverUpload" />
+              </label>
+            </div>
+            <img v-if="form.cover_image" :src="form.cover_image" class="mt-2 w-32 h-20 object-cover rounded border" />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Tags (comma separated)</label>
@@ -48,9 +55,25 @@
 
         <div>
           <label class="block text-sm font-medium mb-1">Content (Markdown)</label>
-          <textarea v-model="form.content" rows="10" class="w-full px-3 py-2 border rounded-lg font-mono text-sm" 
-                    placeholder="# Your blog content in Markdown..."></textarea>
-          <p class="text-xs text-gray-400 mt-1">Full Markdown editor coming soon. For now, use plain Markdown syntax.</p>
+          <div class="border rounded-lg overflow-hidden">
+            <MdEditor
+              :key="editingBlog || 'new'"
+              v-model="form.content"
+              :toolbars="[
+                'bold', 'underline', 'italic', 'strikeThrough', '-',
+                'title', 'sub', 'sup', 'quote', 'unorderedList', 'orderedList', '-',
+                'codeRow', 'code', 'link', 'image', 'table', '-',
+                'revoke', 'next', 'save', '=',
+                'pageFullscreen', 'fullscreen', 'preview', 'htmlPreview', 'catalog'
+              ]"
+              :on-upload-img="handleEditorImageUpload"
+              theme="light"
+              :editor-id="'blog-editor'"
+              code-theme="stackoverflow"
+              style="height: 500px;"
+              placeholder="# Write your blog post in Markdown..."
+            />
+          </div>
         </div>
 
         <div class="flex gap-2">
@@ -110,7 +133,17 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost } from '../../api'
+import { getBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, uploadFile } from '../../api'
+import { MdEditor, config } from 'md-editor-v3'
+import mermaid from 'mermaid'
+import 'md-editor-v3/lib/style.css'
+
+// 注册 mermaid 实例
+config({
+  editorExtensions: {
+    mermaid: { instance: mermaid }
+  }
+})
 
 const blogs = ref([])
 const showAddBlog = ref(false)
@@ -135,10 +168,12 @@ onMounted(async () => {
 
 async function loadBlogs() {
   try {
-    const res = await getBlogPosts(1, 100, false) // 获取所有文章（包括草稿）
-    blogs.value = res.data.data.data || res.data.data
+    const res = await getBlogPosts(1, 100, false)
+    // API 返回 { list: [...], total: N }，正确提取 list 数组
+    blogs.value = res.data.data?.list || []
   } catch (error) {
     console.error('Failed to load blogs:', error)
+    blogs.value = []
   }
 }
 
@@ -187,6 +222,33 @@ async function handleUpdateBlog() {
   } catch (error) {
     console.error('Failed to update blog:', error)
   }
+}
+
+async function handleEditorImageUpload(files, callback) {
+  const uploadedUrls = []
+  for (const file of files) {
+    try {
+      const res = await uploadFile('blog-images', file)
+      uploadedUrls.push(res.data.data.url)
+    } catch (error) {
+      console.error('Failed to upload image:', error)
+      uploadedUrls.push('')
+    }
+  }
+  callback(uploadedUrls)
+}
+
+async function handleCoverUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  try {
+    const res = await uploadFile('blog-images', file)
+    form.value.cover_image = res.data.data.url
+  } catch (error) {
+    console.error('Failed to upload cover image:', error)
+    alert('封面图上传失败')
+  }
+  event.target.value = ''
 }
 
 async function handleDeleteBlog(id) {

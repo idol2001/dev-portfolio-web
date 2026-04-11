@@ -63,9 +63,39 @@
               No Icon
             </div>
             <span class="text-xs text-center truncate w-full">{{ item.skill_title }}</span>
-            <button @click="handleDeleteItem(item.id)" class="absolute top-1 right-1 text-red-500 opacity-0 group-hover:opacity-100 text-xs hover:underline">
-              ✕
-            </button>
+            <!-- Action buttons -->
+            <div class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+              <button @click="startEditItem(item)" class="text-blue-500 text-xs hover:underline">✎</button>
+              <button @click="handleDeleteItem(item.id)" class="text-red-500 text-xs hover:underline">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Item Inline Form -->
+        <div v-if="editingItemId" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 class="text-sm font-medium text-blue-800 mb-2">Edit Skill</h4>
+          <div class="flex flex-col gap-3">
+            <div class="flex gap-3 items-start">
+              <div class="flex-1">
+                <input v-model="editingItemTitle" type="text" placeholder="Skill name" class="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="cursor-pointer bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+                  📁 Upload Icon
+                  <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" class="hidden" @change="handleItemIconUpload" />
+                </label>
+                <button v-if="editingItemIcon" @click="editingItemIcon = ''" class="text-red-500 text-xs hover:underline">Remove</button>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500">Preview:</span>
+              <img v-if="editingItemIcon" :src="editingItemIcon" class="w-8 h-8 object-contain" />
+              <span v-else class="text-xs text-gray-400">No icon selected</span>
+            </div>
+            <div class="flex gap-2">
+              <button @click="handleUpdateItem" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">Save</button>
+              <button @click="editingItemId = null" class="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+            </div>
           </div>
         </div>
 
@@ -84,7 +114,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getSkillGroups, createSkillGroup, updateSkillGroup, deleteSkillGroup, createSkillItem, deleteSkillItem } from '../api'
+import { getSkillGroups, createSkillGroup, updateSkillGroup, deleteSkillGroup, createSkillItem, updateSkillItem, deleteSkillItem, uploadFile } from '../../api'
 
 const groups = ref([])
 const showAddGroup = ref(false)
@@ -93,6 +123,9 @@ const editingGroupId = ref(null)
 const editingGroupTitle = ref('')
 const showAddItemFor = ref(null)
 const newItemTitle = ref('')
+const editingItemId = ref(null)
+const editingItemTitle = ref('')
+const editingItemIcon = ref('')
 const message = ref('')
 
 onMounted(async () => {
@@ -169,6 +202,40 @@ async function handleDeleteItem(id) {
     await loadGroups()
   } catch (error) {
     console.error('Failed to delete item:', error)
+  }
+}
+
+function startEditItem(item) {
+  editingItemId.value = item.id
+  editingItemTitle.value = item.skill_title
+  editingItemIcon.value = item.skill_icon || ''
+}
+
+async function handleItemIconUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  try {
+    const res = await uploadFile('skill-icons', file)
+    editingItemIcon.value = res.data.data.url
+    event.target.value = '' // reset file input
+  } catch (error) {
+    console.error('Failed to upload icon:', error)
+    alert('图标上传失败')
+  }
+}
+
+async function handleUpdateItem() {
+  if (!editingItemTitle.value.trim()) return
+  try {
+    await updateSkillItem(editingItemId.value, {
+      title: editingItemTitle.value,
+      icon: editingItemIcon.value
+    })
+    editingItemId.value = null
+    showMessage('Skill updated')
+    await loadGroups()
+  } catch (error) {
+    console.error('Failed to update item:', error)
   }
 }
 

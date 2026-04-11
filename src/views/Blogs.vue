@@ -21,9 +21,9 @@
              class="bg-gray-800 p-6 rounded-lg hover:bg-gray-750 transition cursor-pointer"
              @click="$router.push(`/blog/${post.slug}`)">
           <h2 class="text-2xl font-semibold mb-2">{{ post.title }}</h2>
-          <p class="text-gray-400 mb-4">{{ post.excerpt }}</p>
+          <p class="text-gray-400 mb-4">{{ post.summary || '' }}</p>
           <div class="flex items-center gap-4 text-sm text-gray-500">
-            <span>{{ formatDate(post.CreatedAt) }}</span>
+            <span>{{ formatDate(post.created_at) }}</span>
             <span>👁 {{ post.view_count }} views</span>
           </div>
         </div>
